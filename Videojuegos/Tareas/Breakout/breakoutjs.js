@@ -21,7 +21,7 @@ let game;
 let oldTime = 0;
 
 let initialSpeed = 0.5;
-let paddleSpeed = 0.5;
+let paddleSpeed = 0.8;
 let ballSpeed = 0.5;
 let speedIncrease = 1.015;
 
@@ -109,32 +109,39 @@ class Game {
         this.scoreLabel = new TextLabel(80, 580, "25px Arial", "white");
         this.levelLabel = new TextLabel(350, 580, "25px Arial", "white");
         this.livesLabel = new TextLabel(620, 580, "25px Arial", "white");
-        this.messageLabel = new TextLabel(250, 325, "50px Arial", "yellow");
+        this.gameOverImg = new Image();
+        this.gameOverImg.src = "../Breakout/Assets/gameover.png";  
+        this.gameWinImg = new Image();
+        this.gameWinImg.src = "../Breakout/Assets/win.png";
+        //this.messageLabel = new TextLabel(100,300, "100px Arial", "Red");
+        this.heart = new Image();
+        this.heart.src = "../Breakout/Assets/hearts.png";
+        this.heartextra = new Image();
+        this.heartextra.src = "../Breakout/Assets/heartextra.png";
         this.inPlay = false;
         this.initObjects();
         this.ping = document.createElement("audio");
         this.ping.src = "4387__noisecollector__pongblipe4.wav";
+        this.sounds = {
+            hit: new Audio("../Breakout/Assets/sounds/hit.wav"),
+            blocksound: new Audio("../Breakout/Assets/sounds/block.wav"),
+            freeze: new Audio("../Breakout/Assets/sounds/freeze.wav"),
+            extralive: new Audio("../Breakout/Assets/sounds/extralive.wav"),
+            win: new Audio("../Breakout/Assets/sounds/win.wav"),
+            gameover: new Audio("../Breakout/Assets/sounds/gameover.wav")
+        };
     }
 
     // Create the objects in the game
     initObjects() {
         
-        let paddleWidth = 0; 
-        if (this.level == 1) { 
-            paddleWidth = 150; 
-        } 
-        if (this.level == 2) { 
-            paddleWidth = 120; 
-        } 
-        if (this.level == 3) { 
-            paddleWidth = 90; 
-        } 
+        let paddleWidth = 120;
         this.paddleLeft = new Paddle(new Vector(canvasWidth/2, 520), paddleWidth, 50, "cyan");
         this.paddleLeft.setSprite("../Breakout/Assets/paddle.png");
-        this.topBorder = new GameObject(new Vector(canvasWidth / 2, 0), canvasWidth, 15, "red");
-        this.bottomBorder = new GameObject(new Vector(canvasWidth / 2, canvasHeight), canvasWidth, 15, "cyan");
-        this.rightBorder = new GameObject(new Vector(canvasWidth, canvasHeight / 2), 15, canvasHeight, "red");
-        this.leftBorder = new GameObject(new Vector(0, canvasHeight / 2), 15, canvasHeight, "red");
+        this.topBorder = new GameObject(new Vector(canvasWidth / 2, 0), canvasWidth, 15, "black");
+        this.bottomBorder = new GameObject(new Vector(canvasWidth / 2, canvasHeight), canvasWidth, 15, "red");
+        this.rightBorder = new GameObject(new Vector(canvasWidth, canvasHeight / 2), 15, canvasHeight, "black");
+        this.leftBorder = new GameObject(new Vector(0, canvasHeight / 2), 15, canvasHeight, "black");
         this.ball = new Ball(new Vector(canvasWidth / 2, 400), 20, 20, "white");
         this.ball.setSprite("../Breakout/Assets/ball.png");
         // Blocks
@@ -142,8 +149,35 @@ class Game {
         // So the levels have different amount of rows
         let rows = this.level + 2;
         for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < 6; col++) {
-                let block = new GameObject(new Vector(150 + col * 100, 60 + row * 40), 80, 30, "lime");
+            for (let col = 0; col < 7; col++) {
+                let bloquemagico = Math.random() < 0.05;
+                let bloquebendicion = Math.random() < 0.05;
+                let bloquevida = 0;
+                if(this.lives < 5){
+                    bloquevida = Math.random() < 0.005;
+                }
+                let block = new GameObject(new Vector(100 + col * 100, 60 + row * 40), 80, 30, "cyan");
+                block.bloquemagico = bloquemagico;
+                block.bloquebendicion = bloquebendicion;
+                block.bloquevida = bloquevida;
+                if(this.level == 1){
+                    block.setSprite("../Breakout/Assets/block1.png");
+                }
+                if(this.level == 2){
+                    block.setSprite("../Breakout/Assets/block2.png");
+                }
+                if(this.level == 3){
+                    block.setSprite("../Breakout/Assets/block3.png");
+                }
+                if(bloquemagico){
+                    block.setSprite("../Breakout/Assets/blockmagico.png");
+                }
+                if(bloquebendicion){
+                    block.setSprite("../Breakout/Assets/blockbendicion.png");
+                }
+                if(bloquevida){
+                    block.setSprite("../Breakout/Assets/bloquevida.png");
+                }
                 this.blocks.push(block);
             }
         }
@@ -164,15 +198,45 @@ class Game {
         }
         this.scoreLabel.draw(ctx, "Blocks: " + this.destroyedBlocks);
         this.levelLabel.draw(ctx, "Level: " + this.level);
-        this.livesLabel.draw(ctx, "Lives: " + this.lives);
+
+        for(let i = 0; i < this.lives; i++) {
+            if(i < 3){
+                ctx.drawImage(this.heart, 520 + i * 50, 530, 48,48);
+            }
+            else{
+                ctx.drawImage(this.heartextra, 520 + i * 50, 530, 48,48);
+            }
+            
+        }
+    
         if (this.lives <= 0) {
-            this.messageLabel.draw(ctx, "GAME OVER");
+            ctx.drawImage(this.gameOverImg, (canvasWidth /2) - (600/2), (canvasHeight / 2) - (200/2), 600,200);
+            this.sounds.gameover.play();
         }
         if (this.level == 3 && this.blocks.length == 0) {
-            this.messageLabel.draw(ctx, "  YOU  WIN");
+            ctx.drawImage(this.gameWinImg, (canvasWidth /2) - (600/2), (canvasHeight / 2) - (200/2), 600,200);
+            this.sounds.win.play();
         }
     }
-
+    aplicarMaldicion(){
+        this.sounds.freeze.play();
+        paddleSpeed = 0.4;
+        this.paddleLeft.setSprite("../Breakout/Assets/paddlecongelada.png");
+        setTimeout(() => {
+            paddleSpeed = 0.8;
+            this.paddleLeft.setSprite("../Breakout/Assets/paddle.png");
+        }, 5000);
+    }
+    aplicarBendicion(){
+        this.sounds.freeze.play();
+        this.ball.velocity.y = this.ball.velocity.y/2;
+        this.ball.setSprite("../Breakout/Assets/ballcongelada.png");
+        setTimeout(() => {
+            paddleSpeed = 0.8;
+            this.ball.velocity.y = this.ball.velocity.y *1.75;
+            this.ball.setSprite("../Breakout/Assets/ball.png");
+        }, 5000);
+    }
     // Updated function that detects collisions, moves the objects and advances levels
     update(deltaTime) {
         if (this.lives <= 0 || (this.level == 3 && this.blocks.length == 0)) {
@@ -184,14 +248,20 @@ class Game {
         this.ball.update(deltaTime);
         // Paddle collision
         if (boxOverlap(this.paddleLeft, this.ball)) {
+            this.sounds.hit.play();
+            let hitPoint = (this.ball.position.x - this.paddleLeft.position.x) / 60;
+            
+            this.ball.velocity.x = hitPoint;
             this.ball.velocity.y = -Math.abs(this.ball.velocity.y);
+
             ballSpeed *= speedIncrease;
         }
-        // Top border collision
+
         if (boxOverlap(this.topBorder, this.ball)) {
             this.ball.velocity.y = Math.abs(this.ball.velocity.y);
             ballSpeed *= speedIncrease;
         }
+
         // Side border collision
         if (boxOverlap(this.leftBorder, this.ball) || boxOverlap(this.rightBorder, this.ball)) {
             this.ball.velocity.x *= -1;
@@ -207,6 +277,21 @@ class Game {
         for (let i = 0; i < this.blocks.length; i++) {
             if (boxOverlap(this.blocks[i], this.ball)) {
                 this.ball.velocity.y *= -1;
+
+                if(this.blocks[i].bloquemagico){
+                    this.aplicarMaldicion();
+                }
+                else if(this.blocks[i].bloquebendicion){
+                    this.aplicarBendicion();
+                }
+                else if(this.blocks[i].bloquevida){
+                    this.sounds.extralive.play();
+                    this.lives += 1;
+                }
+                else{
+                    this.sounds.blocksound.play();
+                }
+
                 this.actors.splice(this.actors.indexOf(this.blocks[i]), 1);
                 this.ping.play();
                 this.blocks.splice(i, 1);
@@ -226,7 +311,6 @@ class Game {
             this.inPlay = false; 
         }
     }
-
     createEventListeners() {
         window.addEventListener('keydown', (event) => {
             if (event.key == 'a') {
@@ -277,7 +361,7 @@ function main() {
     // Get the context for drawing in 2D
     ctx = canvas.getContext('2d');
     // Background color 
-    ctx.canvas.style.background = "url(../Breakout/Assets/canvas1.png)";
+    //ctx.canvas.style.background = "url(https://i.pinimg.com/236x/67/58/fd/6758fdd6f636259b36b6ddfdc765b474.jpg)";
     // Create the game object
     game = new Game();
     drawScene(0);
