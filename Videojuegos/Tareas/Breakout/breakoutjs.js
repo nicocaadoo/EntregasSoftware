@@ -109,20 +109,20 @@ class Game {
         this.scoreLabel = new TextLabel(80, 580, "25px Arial", "white");
         this.levelLabel = new TextLabel(350, 580, "25px Arial", "white");
         this.livesLabel = new TextLabel(620, 580, "25px Arial", "white");
-        this.gameOverImg = new Image();
-        this.gameOverImg.src = "../Breakout/Assets/gameover.png";  
+        this.gameOverImg = new Image(); 
+        this.gameOverImg.src = "../Breakout/Assets/gameover.png";  //game Over Image file
         this.gameWinImg = new Image();
-        this.gameWinImg.src = "../Breakout/Assets/win.png";
+        this.gameWinImg.src = "../Breakout/Assets/win.png"; //Win screen Image file
         //this.messageLabel = new TextLabel(100,300, "100px Arial", "Red");
         this.heart = new Image();
-        this.heart.src = "../Breakout/Assets/hearts.png";
+        this.heart.src = "../Breakout/Assets/hearts.png"; //lives Image file
         this.heartextra = new Image();
-        this.heartextra.src = "../Breakout/Assets/heartextra.png";
+        this.heartextra.src = "../Breakout/Assets/heartextra.png"; //extra live Image file
         this.inPlay = false;
         this.initObjects();
         this.ping = document.createElement("audio");
         this.ping.src = "4387__noisecollector__pongblipe4.wav";
-        this.sounds = {
+        this.sounds = { //Sounds
             hit: new Audio("../Breakout/Assets/sounds/hit.wav"),
             blocksound: new Audio("../Breakout/Assets/sounds/block.wav"),
             freeze: new Audio("../Breakout/Assets/sounds/freeze.wav"),
@@ -134,32 +134,37 @@ class Game {
 
     // Create the objects in the game
     initObjects() {
-        
+        //Paddle
         let paddleWidth = 120;
         this.paddleLeft = new Paddle(new Vector(canvasWidth/2, 520), paddleWidth, 50, "cyan");
         this.paddleLeft.setSprite("../Breakout/Assets/paddle.png");
+        //canvas borders
         this.topBorder = new GameObject(new Vector(canvasWidth / 2, 0), canvasWidth, 15, "black");
         this.bottomBorder = new GameObject(new Vector(canvasWidth / 2, canvasHeight), canvasWidth, 15, "red");
         this.rightBorder = new GameObject(new Vector(canvasWidth, canvasHeight / 2), 15, canvasHeight, "black");
         this.leftBorder = new GameObject(new Vector(0, canvasHeight / 2), 15, canvasHeight, "black");
+        //ball sprite with its image file
         this.ball = new Ball(new Vector(canvasWidth / 2, 400), 20, 20, "white");
         this.ball.setSprite("../Breakout/Assets/ball.png");
         // Blocks
         this.blocks = [];
-        // So the levels have different amount of rows
+        // Add rows for each level
         let rows = this.level + 2;
         for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < 7; col++) {
+            for (let col = 0; col < 8; col++) {
+                //Probabilities of generating magic blocks
                 let bloquemagico = Math.random() < 0.05;
                 let bloquebendicion = Math.random() < 0.05;
                 let bloquevida = 0;
-                if(this.lives < 5){
-                    bloquevida = Math.random() < 0.005;
+                if(this.lives < 5){ //only generates extra lives in levels when you have less than 5 lives
+                    bloquevida = Math.random() < 0.008;
                 }
-                let block = new GameObject(new Vector(100 + col * 100, 60 + row * 40), 80, 30, "cyan");
-                block.bloquemagico = bloquemagico;
+                let block = new GameObject(new Vector(50 + col * 100, 60 + row * 40), 80, 30, "cyan");
+                //adds the ability if the probability landed
+                block.bloquemagico = bloquemagico; 
                 block.bloquebendicion = bloquebendicion;
                 block.bloquevida = bloquevida;
+                //Different block visuals for each level and abilities
                 if(this.level == 1){
                     block.setSprite("../Breakout/Assets/block1.png");
                 }
@@ -188,7 +193,7 @@ class Game {
             this.bottomBorder,
             this.rightBorder,
             this.leftBorder,
-            ...this.blocks // To not need to specify each one individually
+            ...this.blocks 
         ];
     }
 
@@ -196,9 +201,12 @@ class Game {
         for (let actor of this.actors) {
             actor.draw(ctx);
         }
+        //Counts the amount of destroyed blocks
         this.scoreLabel.draw(ctx, "Blocks: " + this.destroyedBlocks);
+        //Counts the level you are on
         this.levelLabel.draw(ctx, "Level: " + this.level);
 
+        //Draws the lives but if theres more than 3, the extra live image will appear
         for(let i = 0; i < this.lives; i++) {
             if(i < 3){
                 ctx.drawImage(this.heart, 520 + i * 50, 530, 48,48);
@@ -208,25 +216,28 @@ class Game {
             }
             
         }
-    
+        //Game over situation
         if (this.lives <= 0) {
             ctx.drawImage(this.gameOverImg, (canvasWidth /2) - (600/2), (canvasHeight / 2) - (200/2), 600,200);
             this.sounds.gameover.play();
         }
+        //Win Situation
         if (this.level == 3 && this.blocks.length == 0) {
             ctx.drawImage(this.gameWinImg, (canvasWidth /2) - (600/2), (canvasHeight / 2) - (200/2), 600,200);
             this.sounds.win.play();
         }
     }
+    //Apply Curse function to slow down the sword
     aplicarMaldicion(){
         this.sounds.freeze.play();
         paddleSpeed = 0.4;
         this.paddleLeft.setSprite("../Breakout/Assets/paddlecongelada.png");
-        setTimeout(() => {
+        setTimeout(() => { //Timeout of 5 seconds to revert
             paddleSpeed = 0.8;
             this.paddleLeft.setSprite("../Breakout/Assets/paddle.png");
         }, 5000);
     }
+    //Apply blessing and slowing down the ball
     aplicarBendicion(){
         this.sounds.freeze.play();
         this.ball.velocity.y = this.ball.velocity.y/2;
@@ -237,8 +248,9 @@ class Game {
             this.ball.setSprite("../Breakout/Assets/ball.png");
         }, 5000);
     }
-    // Updated function that detects collisions, moves the objects and advances levels
+    // This function takes care of moving objects, collisions and finishing the game
     update(deltaTime) {
+        //game ended situation
         if (this.lives <= 0 || (this.level == 3 && this.blocks.length == 0)) {
             return;
         }
@@ -246,11 +258,14 @@ class Game {
         // Move objects
         this.paddleLeft.update(deltaTime);
         this.ball.update(deltaTime);
+
         // Paddle collision
         if (boxOverlap(this.paddleLeft, this.ball)) {
             this.sounds.hit.play();
+            //calculates the hit point on the paddle
             let hitPoint = (this.ball.position.x - this.paddleLeft.position.x) / 60;
             
+            //changes trajectory depending on the hitpoint
             this.ball.velocity.x = hitPoint;
             this.ball.velocity.y = -Math.abs(this.ball.velocity.y);
 
@@ -267,27 +282,32 @@ class Game {
             this.ball.velocity.x *= -1;
             ballSpeed *= speedIncrease;
         }
+
         // Bottom border collision
         if (boxOverlap(this.bottomBorder, this.ball)) {
             this.lives--;
             this.ball.reset();
             this.inPlay = false;
         }
-        // Block collision
+
+        // Block collisions
         for (let i = 0; i < this.blocks.length; i++) {
             if (boxOverlap(this.blocks[i], this.ball)) {
                 this.ball.velocity.y *= -1;
-
+                //If the ball hits a cursed block it calls the function
                 if(this.blocks[i].bloquemagico){
                     this.aplicarMaldicion();
                 }
+                //If the ball hits a blessed block it calls the function
                 else if(this.blocks[i].bloquebendicion){
                     this.aplicarBendicion();
                 }
+                //If the ball hits an extra life block it plays the sound and adds an extra life
                 else if(this.blocks[i].bloquevida){
                     this.sounds.extralive.play();
                     this.lives += 1;
                 }
+                //If the ball hits a normal block it just plays the sound
                 else{
                     this.sounds.blocksound.play();
                 }
